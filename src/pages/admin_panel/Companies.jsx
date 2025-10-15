@@ -278,15 +278,7 @@ export default function Companies() {
         {/* Header */}
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4">
           <h1 className="text-3xl font-bold text-white">Companies</h1>
-          <div className="flex gap-3">
-            <button
-              onClick={openAddModal}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg shadow transition-colors"
-              disabled={saving || loading}
-            >
-              ➕ Add Company
-            </button>
-          </div>
+          
         </div>
 
         {/* Search */}
@@ -300,6 +292,16 @@ export default function Companies() {
             disabled={saving || loading}
           />
         </div>
+
+        <div className="flex gap-3">
+            <button
+              onClick={openAddModal}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg shadow transition-colors absolute top-20 right-3"
+              disabled={saving || loading}
+            >
+              ➕ Add Company
+            </button>
+          </div>
 
         {/* Table */}
         <div className="bg-gray-800 rounded-lg shadow-lg overflow-x-auto">
