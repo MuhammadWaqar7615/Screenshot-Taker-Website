@@ -780,6 +780,226 @@
 
 
 
+// import React, { useEffect } from "react";
+// import { useNavigate } from "react-router-dom";
+// import { db } from "../config/firebase";
+// import {
+//   collection,
+//   addDoc,
+//   serverTimestamp,
+//   getDocs,
+//   query,
+//   where,
+// } from "firebase/firestore";
+// import { toast, ToastContainer } from "react-toastify";
+// import "react-toastify/dist/ReactToastify.css";
+// import axios from "axios";
+
+// // ✅ Site Admin credentials
+// const SITE_ADMIN_EMAIL = "siteadmin@gmail.com";
+// const SITE_ADMIN_PASSWORD = "siteadmin123";
+
+// const LoginForm = () => {
+//   const navigate = useNavigate();
+
+//   useEffect(() => {
+//     const form = document.querySelector("form");
+//     if (form) form.reset();
+//   }, []);
+
+//   const handleLogin = async (e) => {
+//     e.preventDefault();
+
+//     const email = e.target.loginEmail.value.trim().toLowerCase();
+//     const password = e.target.loginPassword.value;
+
+//     console.log("Login attempt:", { email, password });
+
+//     try {
+//       // ✅ CASE 1: Site Admin Login
+//       if (email === SITE_ADMIN_EMAIL && password === SITE_ADMIN_PASSWORD) {
+//         toast.success("✅ Site Admin login successful!");
+
+//         const ipRes = await axios.get("https://api.ipify.org?format=json");
+//         const ipAddress = ipRes.data.ip;
+//         const deviceInfo = navigator.userAgent;
+
+//         await addDoc(collection(db, "log_time"), {
+//           email,
+//           device_info: deviceInfo,
+//           ip_address: ipAddress,
+//           login_time: serverTimestamp(),
+//           role: "Site Admin",
+//         });
+
+//         localStorage.setItem(
+//           "user",
+//           JSON.stringify({ 
+//             email, 
+//             role: "Site Admin",
+//             isSiteAdmin: true
+//           })
+//         );
+
+//         navigate("/admin/companies");
+//         return;
+//       }
+
+//       // ✅ CASE 2: Company Admin (from Firestore "users")
+//       const usersRef = collection(db, "users");
+//       const q = query(usersRef, where("email", "==", email));
+
+//       const querySnapshot = await getDocs(q);
+      
+//       console.log("Firestore results:", {
+//         totalDocs: querySnapshot.size,
+//         docs: querySnapshot.docs.map(doc => ({
+//           id: doc.id,
+//           data: doc.data()
+//         }))
+//       });
+
+//       if (querySnapshot.empty) {
+//         toast.error("❌ User not found! Please check your email.");
+//         return;
+//       }
+
+//       let userData = null;
+//       let userDocId = null;
+
+//       querySnapshot.forEach((doc) => {
+//         const data = doc.data();
+//         console.log("Checking user:", data);
+        
+//         if (data.password === password) {
+//           userData = data;
+//           userDocId = doc.id;
+//         }
+//       });
+
+//       if (!userData) {
+//         toast.error("❌ Invalid password!");
+//         return;
+//       }
+
+//       const userRole = userData.role?.toLowerCase();
+//       console.log("User role:", userRole);
+
+//       const allowedRoles = ["admin", "company admin", "Company Admin" , "Super Admin", "Company Admin"];
+//       if (!allowedRoles.includes(userRole)) {
+//         toast.error("⛔ You are not authorized as an Admin!");
+//         return;
+//       }
+
+//       toast.success(`✅ Welcome back, ${userData.email}`);
+
+//       const ipRes = await axios.get("https://api.ipify.org?format=json");
+//       const ipAddress = ipRes.data.ip;
+//       const deviceInfo = navigator.userAgent;
+
+//       await addDoc(collection(db, "log_time"), {
+//         email: userData.email,
+//         cid: userData.cid,
+//         company_name: userData.companyName || userData.company_name || "N/A",
+//         device_info: deviceInfo,
+//         ip_address: ipAddress,
+//         login_time: serverTimestamp(),
+//         role: "Company Admin",
+//       });
+
+//       // ✅ Save complete user data to localStorage including CID
+//       const userInfo = {
+//         id: userDocId,
+//         email: userData.email,
+//         role: "Company Admin",
+//         cid: userData.cid, // This is the company ID
+//         companyName: userData.companyName || userData.company_name,
+//         name: userData.name,
+//         contact: userData.contact,
+//         department: userData.department,
+//         isSiteAdmin: false
+//       };
+
+//       localStorage.setItem("user", JSON.stringify(userInfo));
+      
+//       // ✅ Also store company info separately for easy access
+//       localStorage.setItem("company", JSON.stringify({
+//         id: userData.cid, // Company ID
+//         name: userData.companyName || userData.company_name
+//       }));
+
+//       console.log("Stored user data:", userInfo);
+//       console.log("Stored company data:", { id: userData.cid, name: userData.companyName });
+
+//       navigate("/admin/onboarding");
+
+//     } catch (error) {
+//       console.error("Login error:", error);
+//       toast.error(`⚠️ Login failed: ${error.message}`);
+//     }
+//   };
+
+//   return (
+//     <div className="flex items-center justify-center min-h-screen bg-gray-300">
+//       <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
+//         <h2 className="text-2xl font-bold text-center mb-6 text-gray-800">
+//           Login
+//         </h2>
+
+//         <form onSubmit={handleLogin} className="space-y-4" autoComplete="off">
+//           <div>
+//             <label
+//               htmlFor="loginEmail"
+//               className="block text-sm font-medium text-gray-700"
+//             >
+//               Email
+//             </label>
+//             <input
+//               type="text"
+//               id="loginEmail"
+//               name="loginEmail"
+//               className="mt-1 w-full p-2 text-black border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-800"
+//               placeholder="Enter your email"
+//               required
+//             />
+//           </div>
+
+//           <div>
+//             <label
+//               htmlFor="loginPassword"
+//               className="block text-sm font-medium text-gray-700"
+//             >
+//               Password
+//             </label>
+//             <input
+//               type="password"
+//               id="loginPassword"
+//               name="loginPassword"
+//               className="mt-1 w-full p-2 text-black border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-800"
+//               placeholder="Enter your password"
+//               required
+//             />
+//           </div>
+
+//           <button
+//             type="submit"
+//             className="w-full cursor-po bg-gray-700 hover:bg-gray-800 text-white p-2 rounded-md transition duration-200"
+//           >
+//             Login
+//           </button>
+//         </form>
+
+//         <ToastContainer position="top-right" autoClose={3000} />
+//       </div>
+//     </div>
+//   );
+// };
+
+// export default LoginForm;
+
+
+
+
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { db } from "../config/firebase";
@@ -810,7 +1030,7 @@ const LoginForm = () => {
   const handleLogin = async (e) => {
     e.preventDefault();
 
-    const email = e.target.loginEmail.value.trim().toLowerCase();
+    const email = e.target.loginEmail.value.trim(); 
     const password = e.target.loginPassword.value;
 
     console.log("Login attempt:", { email, password });
@@ -882,11 +1102,25 @@ const LoginForm = () => {
         return;
       }
 
-      const userRole = userData.role?.toLowerCase();
+      // ✅ UPDATED: Multiple admin roles check (case insensitive)
+      const userRole = userData.role;
       console.log("User role:", userRole);
 
-      const allowedRoles = ["admin", "company admin"];
-      if (!allowedRoles.includes(userRole)) {
+      const allowedRoles = [
+        "admin", 
+        "company admin", 
+        "Company Admin", 
+        "Super Admin",
+        "super admin"
+      ];
+
+      // Case insensitive check
+      const normalizedUserRole = userRole?.toLowerCase().trim();
+      const isAuthorized = allowedRoles.some(role => 
+        role.toLowerCase() === normalizedUserRole
+      );
+
+      if (!isAuthorized) {
         toast.error("⛔ You are not authorized as an Admin!");
         return;
       }
@@ -983,7 +1217,7 @@ const LoginForm = () => {
 
           <button
             type="submit"
-            className="w-full cursor-pointer bg-gray-700 hover:bg-gray-800 text-white p-2 rounded-md transition duration-200"
+            className="w-full cursor-po bg-gray-700 hover:bg-gray-800 text-white p-2 rounded-md transition duration-200"
           >
             Login
           </button>
@@ -996,3 +1230,660 @@ const LoginForm = () => {
 };
 
 export default LoginForm;
+
+
+
+// import React, { useEffect } from "react";
+// import { useNavigate } from "react-router-dom";
+// import { db } from "../config/firebase";
+// import {
+//   collection,
+//   addDoc,
+//   serverTimestamp,
+//   getDocs,
+//   query,
+//   where,
+// } from "firebase/firestore";
+// import { toast, ToastContainer } from "react-toastify";
+// import "react-toastify/dist/ReactToastify.css";
+// import axios from "axios";
+
+// // ✅ Site Admin credentials
+// const SITE_ADMIN_EMAIL = "siteadmin@gmail.com";
+// const SITE_ADMIN_PASSWORD = "siteadmin123";
+
+// const LoginForm = () => {
+//   const navigate = useNavigate();
+
+//   useEffect(() => {
+//     const form = document.querySelector("form");
+//     if (form) form.reset();
+//   }, []);
+
+//   const handleLogin = async (e) => {
+//     e.preventDefault();
+
+//     const email = e.target.loginEmail.value.trim(); 
+//     const password = e.target.loginPassword.value;
+
+//     console.log("Login attempt:", { email, password });
+
+//     try {
+//       // ✅ CASE 1: Site Admin Login
+//       if (email === SITE_ADMIN_EMAIL && password === SITE_ADMIN_PASSWORD) {
+//         toast.success("✅ Site Admin login successful!");
+
+//         const ipRes = await axios.get("https://api.ipify.org?format=json");
+//         const ipAddress = ipRes.data.ip;
+//         const deviceInfo = navigator.userAgent;
+
+//         await addDoc(collection(db, "log_time"), {
+//           email,
+//           device_info: deviceInfo,
+//           ip_address: ipAddress,
+//           login_time: serverTimestamp(),
+//           role: "Site Admin",
+//         });
+
+//         localStorage.setItem(
+//           "user",
+//           JSON.stringify({ 
+//             email, 
+//             role: "Site Admin",
+//             isSiteAdmin: true
+//           })
+//         );
+
+//         navigate("/admin/companies");
+//         return;
+//       }
+
+//       // ✅ CASE 2: Company Admin (from Firestore "users")
+//       const usersRef = collection(db, "users");
+//       const q = query(usersRef, where("email", "==", email));
+
+//       const querySnapshot = await getDocs(q);
+      
+//       console.log("Firestore results:", {
+//         totalDocs: querySnapshot.size,
+//         docs: querySnapshot.docs.map(doc => ({
+//           id: doc.id,
+//           data: doc.data()
+//         }))
+//       });
+
+//       if (querySnapshot.empty) {
+//         toast.error("❌ User not found! Please check your email.");
+//         return;
+//       }
+
+//       let userData = null;
+//       let userDocId = null;
+
+//       querySnapshot.forEach((doc) => {
+//         const data = doc.data();
+//         console.log("Checking user:", data);
+        
+//         if (data.password === password) {
+//           userData = data;
+//           userDocId = doc.id;
+//         }
+//       });
+
+//       if (!userData) {
+//         toast.error("❌ Invalid password!");
+//         return;
+//       }
+
+//       // ✅ UPDATED: Check user role and handle accordingly
+//       const userRole = userData.role?.toLowerCase().trim();
+//       console.log("User role:", userRole);
+
+//       // Define admin roles (case insensitive)
+//       const adminRoles = [
+//         "admin", 
+//         "company admin", 
+//         "super admin"
+//       ];
+
+//       const isAdmin = adminRoles.includes(userRole);
+
+//       // ✅ REGULAR USER LOGIC
+//       if (!isAdmin) {
+//         // Regular user login
+//         toast.success(`✅ Welcome back, ${userData.name || userData.email}`);
+
+//         const ipRes = await axios.get("https://api.ipify.org?format=json");
+//         const ipAddress = ipRes.data.ip;
+//         const deviceInfo = navigator.userAgent;
+
+//         // Log login time for regular user
+//         await addDoc(collection(db, "log_time"), {
+//           email: userData.email,
+//           cid: userData.cid,
+//           company_name: userData.companyName || userData.company_name || "N/A",
+//           device_info: deviceInfo,
+//           ip_address: ipAddress,
+//           login_time: serverTimestamp(),
+//           role: userData.role || "User",
+//           user_id: userDocId,
+//         });
+
+//         // ✅ Save complete user data to localStorage for regular user
+//         const userInfo = {
+//           id: userDocId,
+//           email: userData.email,
+//           role: userData.role || "User",
+//           cid: userData.cid, // Company ID
+//           companyName: userData.companyName || userData.company_name,
+//           name: userData.name,
+//           contact: userData.contact,
+//           department: userData.department,
+//           isSiteAdmin: false,
+//           isAdmin: false, // Regular user
+//           permissions: userData.permissions || [] // User specific permissions if any
+//         };
+
+//         localStorage.setItem("user", JSON.stringify(userInfo));
+        
+//         // ✅ Also store company info separately for easy access
+//         localStorage.setItem("company", JSON.stringify({
+//           id: userData.cid,
+//           name: userData.companyName || userData.company_name
+//         }));
+
+//         console.log("Stored regular user data:", userInfo);
+
+//         // Navigate to user dashboard or appropriate page
+//         navigate("/user/dashboard");
+//         return;
+//       }
+
+//       // ✅ EXISTING ADMIN LOGIC (unchanged)
+//       toast.success(`✅ Welcome back, ${userData.email}`);
+
+//       const ipRes = await axios.get("https://api.ipify.org?format=json");
+//       const ipAddress = ipRes.data.ip;
+//       const deviceInfo = navigator.userAgent;
+
+//       await addDoc(collection(db, "log_time"), {
+//         email: userData.email,
+//         cid: userData.cid,
+//         company_name: userData.companyName || userData.company_name || "N/A",
+//         device_info: deviceInfo,
+//         ip_address: ipAddress,
+//         login_time: serverTimestamp(),
+//         role: "Company Admin",
+//       });
+
+//       // ✅ Save complete user data to localStorage including CID
+//       const userInfo = {
+//         id: userDocId,
+//         email: userData.email,
+//         role: "Company Admin",
+//         cid: userData.cid, // This is the company ID
+//         companyName: userData.companyName || userData.company_name,
+//         name: userData.name,
+//         contact: userData.contact,
+//         department: userData.department,
+//         isSiteAdmin: false,
+//         isAdmin: true // Company admin
+//       };
+
+//       localStorage.setItem("user", JSON.stringify(userInfo));
+      
+//       // ✅ Also store company info separately for easy access
+//       localStorage.setItem("company", JSON.stringify({
+//         id: userData.cid, // Company ID
+//         name: userData.companyName || userData.company_name
+//       }));
+
+//       console.log("Stored admin user data:", userInfo);
+//       console.log("Stored company data:", { id: userData.cid, name: userData.companyName });
+
+//       navigate("/admin/onboarding");
+
+//     } catch (error) {
+//       console.error("Login error:", error);
+//       toast.error(`⚠️ Login failed: ${error.message}`);
+//     }
+//   };
+
+//   return (
+//     <div className="flex items-center justify-center min-h-screen bg-gray-300">
+//       <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
+//         <h2 className="text-2xl font-bold text-center mb-6 text-gray-800">
+//           Login
+//         </h2>
+
+//         <form onSubmit={handleLogin} className="space-y-4" autoComplete="off">
+//           <div>
+//             <label
+//               htmlFor="loginEmail"
+//               className="block text-sm font-medium text-gray-700"
+//             >
+//               Email
+//             </label>
+//             <input
+//               type="text"
+//               id="loginEmail"
+//               name="loginEmail"
+//               className="mt-1 w-full p-2 text-black border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-800"
+//               placeholder="Enter your email"
+//               required
+//             />
+//           </div>
+
+//           <div>
+//             <label
+//               htmlFor="loginPassword"
+//               className="block text-sm font-medium text-gray-700"
+//             >
+//               Password
+//             </label>
+//             <input
+//               type="password"
+//               id="loginPassword"
+//               name="loginPassword"
+//               className="mt-1 w-full p-2 text-black border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-800"
+//               placeholder="Enter your password"
+//               required
+//             />
+//           </div>
+
+//           <button
+//             type="submit"
+//             className="w-full cursor-po bg-gray-700 hover:bg-gray-800 text-white p-2 rounded-md transition duration-200"
+//           >
+//             Login
+//           </button>
+//         </form>
+
+//         <ToastContainer position="top-right" autoClose={3000} />
+//       </div>
+//     </div>
+//   );
+// };
+
+// export default LoginForm;
+
+
+
+
+// import React, { useEffect } from "react";
+// import { useNavigate } from "react-router-dom";
+// import { db } from "../config/firebase";
+// import {
+//   collection,
+//   addDoc,
+//   serverTimestamp,
+//   getDocs,
+//   query,
+//   where,
+// } from "firebase/firestore";
+// import { toast, ToastContainer } from "react-toastify";
+// import "react-toastify/dist/ReactToastify.css";
+// import axios from "axios";
+
+// // ✅ Site Admin credentials
+// const SITE_ADMIN_EMAIL = "siteadmin@gmail.com";
+// const SITE_ADMIN_PASSWORD = "siteadmin123";
+
+// const LoginForm = () => {
+//   const navigate = useNavigate();
+
+//   useEffect(() => {
+//     const form = document.querySelector("form");
+//     if (form) form.reset();
+//   }, []);
+
+//   const handleLogin = async (e) => {
+//     e.preventDefault();
+
+//     const email = e.target.loginEmail.value.trim().toLowerCase();
+//     const password = e.target.loginPassword.value;
+
+//     console.log("Login attempt:", { email, password });
+
+//     try {
+//       // ✅ CASE 1: Site Admin Login
+//       if (email === SITE_ADMIN_EMAIL && password === SITE_ADMIN_PASSWORD) {
+//         toast.success("✅ Site Admin login successful!");
+
+//         const ipRes = await axios.get("https://api.ipify.org?format=json");
+//         const ipAddress = ipRes.data.ip;
+//         const deviceInfo = navigator.userAgent;
+
+//         await addDoc(collection(db, "log_time"), {
+//           email,
+//           device_info: deviceInfo,
+//           ip_address: ipAddress,
+//           login_time: serverTimestamp(),
+//           role: "Site Admin",
+//         });
+
+//         localStorage.setItem(
+//           "user",
+//           JSON.stringify({ 
+//             email, 
+//             role: "Site Admin",
+//             isSiteAdmin: true
+//           })
+//         );
+
+//         navigate("/admin/companies");
+//         return;
+//       }
+
+//       // ✅ CASE 2: Company Admin (from Firestore "users")
+//       const usersRef = collection(db, "users");
+//       const q = query(usersRef, where("email", "==", email));
+
+//       const querySnapshot = await getDocs(q);
+      
+//       console.log("Firestore results:", {
+//         totalDocs: querySnapshot.size,
+//         docs: querySnapshot.docs.map(doc => ({
+//           id: doc.id,
+//           data: doc.data()
+//         }))
+//       });
+
+//       if (querySnapshot.empty) {
+//         toast.error("❌ User not found! Please check your email.");
+//         return;
+//       }
+
+//       let userData = null;
+//       let userDocId = null;
+
+//       querySnapshot.forEach((doc) => {
+//         const data = doc.data();
+//         console.log("Checking user:", data);
+        
+//         if (data.password === password) {
+//           userData = data;
+//           userDocId = doc.id;
+//         }
+//       });
+
+//       if (!userData) {
+//         toast.error("❌ Invalid password!");
+//         return;
+//       }
+
+//       // ✅ UPDATED: Multiple admin roles check (case insensitive)
+//       const userRole = userData.role;
+//       console.log("User role:", userRole);
+
+//       const allowedRoles = [
+//         "admin", 
+//         "company admin", 
+//         "Company Admin", 
+//         "Super Admin",
+//         "super admin"
+//       ];
+
+//       // Case insensitive check
+//       const normalizedUserRole = userRole?.toLowerCase().trim();
+//       const isAuthorized = allowedRoles.some(role => 
+//         role.toLowerCase() === normalizedUserRole
+//       );
+
+//       if (!isAuthorized) {
+//         toast.error("⛔ You are not authorized as an Admin!");
+//         return;
+//       }
+
+//       toast.success(`✅ Welcome back, ${userData.email}`);
+
+//       const ipRes = await axios.get("https://api.ipify.org?format=json");
+//       const ipAddress = ipRes.data.ip;
+//       const deviceInfo = navigator.userAgent;
+
+//       await addDoc(collection(db, "log_time"), {
+//         email: userData.email,
+//         cid: userData.cid,
+//         company_name: userData.companyName || userData.company_name || "N/A",
+//         device_info: deviceInfo,
+//         ip_address: ipAddress,
+//         login_time: serverTimestamp(),
+//         role: userRole, // Store actual role from database
+//       });
+
+//       // ✅ Save complete user data to localStorage including CID
+//       const userInfo = {
+//         id: userDocId,
+//         email: userData.email,
+//         role: userRole, // Store actual role from database
+//         cid: userData.cid, // This is the company ID
+//         companyName: userData.companyName || userData.company_name,
+//         name: userData.name,
+//         contact: userData.contact,
+//         department: userData.department,
+//         isSiteAdmin: false
+//       };
+
+//       localStorage.setItem("user", JSON.stringify(userInfo));
+      
+//       // ✅ Also store company info separately for easy access
+//       localStorage.setItem("company", JSON.stringify({
+//         id: userData.cid, // Company ID
+//         name: userData.companyName || userData.company_name
+//       }));
+
+//       console.log("Stored user data:", userInfo);
+//       console.log("Stored company data:", { id: userData.cid, name: userData.companyName });
+
+//       navigate("/admin/allusers");
+
+//     } catch (error) {
+//       console.error("Login error:", error);
+//       toast.error(`⚠️ Login failed: ${error.message}`);
+//     }
+//   };
+
+//   return (
+//     <div className="flex items-center justify-center min-h-screen bg-gray-300">
+//       <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
+//         <h2 className="text-2xl font-bold text-center mb-6 text-gray-800">
+//           Login
+//         </h2>
+
+//         <form onSubmit={handleLogin} className="space-y-4" autoComplete="off">
+//           <div>
+//             <label
+//               htmlFor="loginEmail"
+//               className="block text-sm font-medium text-gray-700"
+//             >
+//               Email
+//             </label>
+//             <input
+//               type="text"
+//               id="loginEmail"
+//               name="loginEmail"
+//               className="mt-1 w-full p-2 text-black border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-800"
+//               placeholder="Enter your email"
+//               required
+//             />
+//           </div>
+
+//           <div>
+//             <label
+//               htmlFor="loginPassword"
+//               className="block text-sm font-medium text-gray-700"
+//             >
+//               Password
+//             </label>
+//             <input
+//               type="password"
+//               id="loginPassword"
+//               name="loginPassword"
+//               className="mt-1 w-full p-2 text-black border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-800"
+//               placeholder="Enter your password"
+//               required
+//             />
+//           </div>
+
+//           <button
+//             type="submit"
+//             className="w-full cursor-po bg-gray-700 hover:bg-gray-800 text-white p-2 rounded-md transition duration-200"
+//           >
+//             Login
+//           </button>
+//         </form>
+
+//         <ToastContainer position="top-right" autoClose={3000} />
+//       </div>
+//     </div>
+//   );
+// };
+
+// export default LoginForm;
+
+
+
+
+
+//  import React, { useEffect, useState } from "react";
+// import { useNavigate } from "react-router-dom";
+// import { db } from "../config/firebase";
+// import { collection, addDoc, serverTimestamp, getDocs } from "firebase/firestore";
+// import { toast, ToastContainer } from "react-toastify";
+// import "react-toastify/dist/ReactToastify.css";
+// import axios from "axios";
+
+// // ✅ Allowed credentials
+// const ALLOWED_EMAIL = "siteadmin@gmail.com";
+// const ALLOWED_PASSWORD = "siteadmin123";
+
+// const LoginForm = () => {
+//   const navigate = useNavigate();
+//   const [companies, setCompanies] = useState([]);
+
+//   useEffect(() => {
+//     // Reset form on mount
+//     const form = document.querySelector("form");
+//     if (form) form.reset();
+
+//     // ✅ Check if any company exists
+//     checkCompaniesExist();
+//   }, []);
+
+//   // ✅ Check if any company is registered
+//   const checkCompaniesExist = async () => {
+//     try {
+//       const querySnapshot = await getDocs(collection(db, "companies"));
+//       setCompanies(querySnapshot.docs.map((doc) => doc.data()));
+//     } catch (error) {
+//       console.error("Error checking companies:", error);
+//     }
+//   };
+
+//   // ✅ Handle Login
+//   const handleLogin = async (e) => {
+//     e.preventDefault();
+
+//     const email = e.target.loginEmail.value.trim();
+//     const password = e.target.loginPassword.value;
+
+//     // Step 1 — Basic validation
+//     // if (email !== ALLOWED_EMAIL || password !== ALLOWED_PASSWORD) {
+//     //   toast.error("❌ Invalid credentials!");
+//     //   return;
+//     // }
+
+//     // Step 2 — Login successful
+//     toast.success("✅ Login successful!");
+//     console.log("Login successful:", email);
+
+//     // Step 3 — Try to log device/IP (optional)
+//     try {
+//       const ipRes = await axios.get("https://api.ipify.org?format=json");
+//       const ipAddress = ipRes.data.ip;
+//       const deviceInfo = navigator.userAgent;
+
+//       await addDoc(collection(db, "log_time"), {
+//         email,
+//         device_info: deviceInfo,
+//         ip_address: ipAddress,
+//         login_time: serverTimestamp(),
+//         reached_onboarding: true,
+//       });
+//     } catch (error) {
+//       console.warn("⚠ Could not save login log:", error.message);
+//       // Just warning, not breaking login
+//     }
+
+//     // Step 4 — Redirect based on company existence
+//     if (companies.length > 0) {
+//       navigate("/admin/allusers");
+//       toast.info("Redirecting to All Users page");
+//     } else {
+//       navigate("/admin/onboarding");
+//       toast.info("No companies found. Please register a company first.");
+//     }
+//   };
+
+//   return (
+//     <div className="flex items-center justify-center min-h-screen bg-gray-300">
+//       <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
+//         <h2 className="text-2xl font-bold text-center mb-6 text-gray-800">
+//           Login
+//         </h2>
+
+//         <form onSubmit={handleLogin} className="space-y-4" autoComplete="off">
+//           {/* Email */}
+//           <div>
+//             <label
+//               htmlFor="loginEmail"
+//               className="block text-sm font-medium text-gray-700"
+//             >
+//               Email
+//             </label>
+//             <input
+//               type="text"
+//               id="loginEmail"
+//               name="loginEmail"
+//               autoComplete="off"
+//               className="mt-1 w-full p-2 text-black border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-800"
+//               placeholder="Enter your email"
+//               required
+//             />
+//           </div>
+
+//           {/* Password */}
+//           <div>
+//             <label
+//               htmlFor="loginPassword"
+//               className="block text-sm font-medium text-gray-700"
+//             >
+//               Password
+//             </label>
+//             <input
+//               type="password"
+//               id="loginPassword"
+//               name="loginPassword"
+//               autoComplete="new-password"
+//               className="mt-1 w-full p-2 text-black border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-800"
+//               placeholder="Enter your password"
+//               required
+//             />
+//           </div>
+
+//           {/* Button */}
+//           <button
+//             type="submit"
+//             className="w-full cursor-pointer bg-gray-700 hover:bg-gray-800 text-white p-2 rounded-md transition duration-200"
+//           >
+//             Login
+//           </button>
+//         </form>
+
+//         <ToastContainer position="top-right" autoClose={3000} />
+//       </div>
+//     </div>
+//   );
+// };
+
+// export default LoginForm;

@@ -12,6 +12,7 @@ import LoginForm from "./components/LoginForm";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Skills from "./pages/admin_panel/Skills";
 import Tasks from "./pages/admin_panel/Tasks";
+import Screenshots from "./pages/Screenshots";
 
 
 function App() {
@@ -33,6 +34,14 @@ function App() {
       element: (
         <ProtectedRoute allowedRoles={["Site Admin", "Company Admin"]}>
           <Admin />
+        </ProtectedRoute>
+      ),
+    },
+    {
+      path: "/screenshots/:id",
+      element: (
+        <ProtectedRoute allowedRoles={["Site Admin", "Company Admin"]}>
+          <Screenshots />
         </ProtectedRoute>
       ),
     },
